@@ -80,7 +80,7 @@ lmage = lm(lmmodel2$residuals ~ fit$residuals)
 summary(lmage)
 abline(lmage,col="blue",lwd=5)
 
-fit=lm(NECK~ABDOMEN,data=BodyFat2)
+fit=lm(CHEST~ABDOMEN,data=BodyFat2)
 plot(fit$residuals,lmmodel2$residuals,pch=19)
 lmage = lm(lmmodel2$residuals ~ fit$residuals)
 summary(lmage)
@@ -91,9 +91,14 @@ abline(lmage,col="blue",lwd=5)
 lmmodel3_1 = lm(BODYFAT ~ ABDOMEN + AGE, data=BodyFat2)
 summary(lmmodel3_1)
 
-#Model3_2:add Neck variable
-lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + NECK, data=BodyFat2)
+#Model3_2:add Chest variable
+lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + CHEST, data=BodyFat2)
 summary(lmmodel3_2)
+
+#Model3_3:add Age and Chest variable
+lmmodel3_3 = lm(BODYFAT ~ ABDOMEN + CHEST + AGE, data=BodyFat2)
+summary(lmmodel3_3)
+
 
 ###Model comparison
 #K-fold CrossValidation
@@ -103,8 +108,10 @@ CV=trainControl(method = "cv",number = 5)    ##5-fold
 model1=train(BODYFAT ~ ABDOMEN, data=BodyFat, method="lm",trControl=CV)
 model2=train(BODYFAT ~ ABDOMEN, data=BodyFat2, method="lm",trControl=CV)
 model3_1=train(BODYFAT ~ ABDOMEN+AGE, data=BodyFat2, method="lm",trControl=CV)
-model3_2=train(BODYFAT ~ ABDOMEN+NECK, data=BodyFat2, method="lm",trControl=CV)
-evaluate=rbind(model1$results,model2$results,model3_1$results,model3_2$results)
+model3_2=train(BODYFAT ~ ABDOMEN+CHEST, data=BodyFat2, method="lm",trControl=CV)
+model3_3=train(BODYFAT ~ ABDOMEN+CHEST+AGE, data=BodyFat2, method="lm",trControl=CV)
+
+evaluate=rbind(model1$results,model2$results,model3_1$results,model3_2$results,model3_3$results)
 evaluate
 #The best model is model3_2: BodyFat ~ Abdomen + Neck
 
