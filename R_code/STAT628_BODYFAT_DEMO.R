@@ -1,4 +1,5 @@
 library(ggplot2)
+library(caret)
 
 ###Data loading
 BodyFat = read.csv("../data/BodyFat.csv") 
@@ -73,7 +74,6 @@ summary(lmmodel2)
 
 #Model3:add another covariate to model2
 #using added variable plot
-par(mfrow = c(2, 2))
 fit=lm(AGE~ABDOMEN,data=BodyFat2)
 plot(fit$residuals,lmmodel2$residuals,pch=19)
 lmage = lm(lmmodel2$residuals ~ fit$residuals)
@@ -92,41 +92,21 @@ lmmodel3_1 = lm(BODYFAT ~ ABDOMEN + AGE, data=BodyFat2)
 summary(lmmodel3_1)
 
 #Model3_2:add Neck variable
-lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + AGE, data=BodyFat2)
+lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + NECK, data=BodyFat2)
 summary(lmmodel3_2)
 
 ###Model comparison
-#CrossValidation
-CV=function(n,Z){
-        z=rep(1:Z,ceiling(n/Z))[1:n]
-        z=sample(z,n)
-        mm=list()
-        for (i in 1:Z) mm[[i]]=(1:n)[z==i];return(mm)
-}
-nrow=nrow(BodyFat2)
+#K-fold CrossValidation
+set.seed(100)
+CV=trainControl(method = "cv",number = 5)    ##5-fold
 
-EEMS=function(t=3,Z=10){
-        EMSE = numeric(t)
-        for(i in 1:t){
-                listcv=CV(nrow,Z)
-                MSE=numeric(Z)
-                for(j in 1:Z){   #ѭ??ʮ??
-                        m=listcv[[j]]
-                        train = BodyFat2[-m,]
-                        pred = BodyFat2[m,]
-                        model3 = lm(BODYFAT ~ ADIPOSITY + AGE , data=train)
-                        predBodyFat = predict(model3, newdata = pred)
-                        MSE[j]=sqrt(sum(predBodyFat - pred$BODYFAT)^2/length(predBodyFat))
-                }
-                EMSE[i] = mean(MSE)
-        }
-        EEE = mean(EMSE)
-        return(EEE)
-}
-
-E=EEMS(100,10)
-E
-
+model1=train(BODYFAT ~ ABDOMEN, data=BodyFat, method="lm",trControl=CV)
+model2=train(BODYFAT ~ ABDOMEN, data=BodyFat2, method="lm",trControl=CV)
+model3_1=train(BODYFAT ~ ABDOMEN+AGE, data=BodyFat2, method="lm",trControl=CV)
+model3_2=train(BODYFAT ~ ABDOMEN+NECK, data=BodyFat2, method="lm",trControl=CV)
+evaluate=rbind(model1$results,model2$results,model3_1$results,model3_2$results)
+evaluate
+#The best model is model3_2: BodyFat ~ Abdomen + Neck
 
 ###Model diagnostics
 diagnostic = function(model){
@@ -145,4 +125,5 @@ diagnostic = function(model){
         plot(1:length(model$residual),pii4,type="p",pch=19,main="Leverage Values (Pii)",xlab = "Obs. number",ylab = "Hatvalues")
 }
 
-diagnostic(lmmodel2)
+diagnostic(lmmodel3_2)
+summary(lmmodel3_2)
