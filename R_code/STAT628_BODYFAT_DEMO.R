@@ -7,11 +7,19 @@ BodyFat = read.csv("../data/BodyFat.csv")
 
 ###Data preprocess
 #BodyFat calculated by density
+#BMI calculated by weight and height
 BodyFat$BODYFAT_cal = 495/BodyFat$DENSITY-450  
+BodyFat$BMI = BodyFat$WEIGHT*0.4536/(BodyFat$HEIGHT*0.0254)^2
 
-#Find and remove the error data of BodyFat
+
+#Find and remove the error data of BodyFat and BMI
 inequalList1 = BodyFat$IDNO[abs(BodyFat$BODYFAT-BodyFat$BODYFAT_cal)>2]
 BodyFat = BodyFat[-which(abs(BodyFat$BODYFAT-BodyFat$BODYFAT_cal)>2),]
+inequalList2 = BodyFat$IDNO[abs(BodyFat$BMI-BodyFat$ADIPOSITY)>1]
+BodyFat = BodyFat[-which(abs(BodyFat$BMI-BodyFat$ADIPOSITY)>1),]
+
+#change unit of Height to cm
+BodyFat$HEIGHT=BodyFat$HEIGHT*2.54
 
 
 ###Model building
@@ -80,23 +88,23 @@ lmage = lm(lmmodel2$residuals ~ fit$residuals)
 summary(lmage)
 abline(lmage,col="blue",lwd=5)
 
-fit=lm(CHEST~ABDOMEN,data=BodyFat2)
+fit=lm(HEIGHT~ABDOMEN,data=BodyFat2)
 plot(fit$residuals,lmmodel2$residuals,pch=19)
-lmage = lm(lmmodel2$residuals ~ fit$residuals)
-summary(lmage)
-abline(lmage,col="blue",lwd=5)
+lmheight = lm(lmmodel2$residuals ~ fit$residuals)
+summary(lmheight)
+abline(lmheight,col="blue",lwd=5)
 
 
 #Model3_1:add Age variable
 lmmodel3_1 = lm(BODYFAT ~ ABDOMEN + AGE, data=BodyFat2)
 summary(lmmodel3_1)
 
-#Model3_2:add Chest variable
-lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + CHEST, data=BodyFat2)
+#Model3_2:add Height variable
+lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + HEIGHT, data=BodyFat2)
 summary(lmmodel3_2)
 
-#Model3_3:add Age and Chest variable
-lmmodel3_3 = lm(BODYFAT ~ ABDOMEN + CHEST + AGE, data=BodyFat2)
+#Model3_3:add Age and Height variable
+lmmodel3_3 = lm(BODYFAT ~ ABDOMEN + HEIGHT + AGE, data=BodyFat2)
 summary(lmmodel3_3)
 
 
@@ -108,12 +116,14 @@ CV=trainControl(method = "cv",number = 5)    ##5-fold
 model1=train(BODYFAT ~ ABDOMEN, data=BodyFat, method="lm",trControl=CV)
 model2=train(BODYFAT ~ ABDOMEN, data=BodyFat2, method="lm",trControl=CV)
 model3_1=train(BODYFAT ~ ABDOMEN+AGE, data=BodyFat2, method="lm",trControl=CV)
-model3_2=train(BODYFAT ~ ABDOMEN+CHEST, data=BodyFat2, method="lm",trControl=CV)
-model3_3=train(BODYFAT ~ ABDOMEN+CHEST+AGE, data=BodyFat2, method="lm",trControl=CV)
+model3_2=train(BODYFAT ~ ABDOMEN+HEIGHT, data=BodyFat2, method="lm",trControl=CV)
+model3_3=train(BODYFAT ~ ABDOMEN+HEIGHT+AGE, data=BodyFat2, method="lm",trControl=CV)
 
 evaluate=rbind(model1$results,model2$results,model3_1$results,model3_2$results,model3_3$results)
 evaluate
-#The best model is model3_2: BodyFat ~ Abdomen + Neck
+
+#The best model is model3_2: BodyFat ~ Abdomen + height
+final_model=lmmodel3_2
 
 ###Model diagnostics
 diagnostic = function(model){
@@ -132,5 +142,20 @@ diagnostic = function(model){
         plot(1:length(model$residual),pii4,type="p",pch=19,main="Leverage Values (Pii)",xlab = "Obs. number",ylab = "Hatvalues")
 }
 
-diagnostic(lmmodel3_2)
-summary(lmmodel3_2)
+diagnostic(final_model)
+summary(final_model)
+
+
+###Model weakness
+set_accurate=0.1
+Age=BodyFat2$AGE>0
+Age1=BodyFat2$AGE<40 & BodyFat2$AGE>20
+Age2=BodyFat2$AGE<60 & BodyFat2$AGE>40
+Age3=BodyFat2$AGE<80 & BodyFat2$AGE>60
+precise=function(scope,accurate){
+        error_rate=final_model$residuals/BodyFat2$BODYFAT
+        error_rate_partial=error_rate[scope]
+        precision=sum(error_rate_partial<accurate)/length(error_rate_partial)
+        print(precision)
+}
+precise(Age1,set_accurate)
