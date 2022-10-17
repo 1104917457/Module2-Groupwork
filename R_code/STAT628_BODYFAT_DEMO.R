@@ -1,7 +1,4 @@
 library(ggplot2)
-
-summary(BodyFat2)
-
 ###Data loading
 BodyFat = read.csv("../data/BodyFat.csv") 
 
@@ -64,7 +61,7 @@ summary(lmmodel1_2)
 #The initial model is Bodyfat ~ Abdomen
 lmmodel1=lmmodel1_2
 
-#Model2:Bodyfat ~ Abdomen without influential point   (improved model1)
+#Model2:Bodyfat ~ Abdomen without outlier   (improved model1)
 BodyFat2=BodyFat[-which(abs(BodyFat$ABDOMEN)>130),]
 ggplot(BodyFat2,aes(ABDOMEN,BODYFAT))+
         geom_point()+
@@ -72,7 +69,7 @@ ggplot(BodyFat2,aes(ABDOMEN,BODYFAT))+
         labs(
                 x="Abdomen",
                 y="Body Fat %",
-                title="Scatterplot of Body Fat % and Abdomen without influential point"
+                title="Scatterplot of Body Fat % and Abdomen without outlier"
         )
 
 lmmodel2 = lm(BODYFAT ~ ABDOMEN, data=BodyFat2)
