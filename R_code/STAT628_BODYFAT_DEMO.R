@@ -1,5 +1,7 @@
 library(ggplot2)
 
+summary(BodyFat2)
+
 ###Data loading
 BodyFat = read.csv("../data/BodyFat.csv") 
 
@@ -132,12 +134,12 @@ summary(final_model)
 
 
 ###Model weakness
-set_accurate=0.1
+set_accurate=5
 Age1=BodyFat2$AGE<40 & BodyFat2$AGE>20
 Age2=BodyFat2$AGE<60 & BodyFat2$AGE>40
 Age3=BodyFat2$AGE<80 & BodyFat2$AGE>60
 precise=function(scope,accurate){
-        error_rate=final_model$residuals/BodyFat2$BODYFAT
+        error_rate=final_model$residuals
         error_rate_partial=error_rate[scope]
         precision=sum(error_rate_partial<accurate)/length(error_rate_partial)
         print(precision)
