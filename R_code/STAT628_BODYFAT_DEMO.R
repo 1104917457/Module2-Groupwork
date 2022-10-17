@@ -1,5 +1,4 @@
 library(ggplot2)
-library(caret)
 
 ###Data loading
 BodyFat = read.csv("../data/BodyFat.csv") 
@@ -64,7 +63,7 @@ summary(lmmodel1_2)
 lmmodel1=lmmodel1_2
 
 #Model2:Bodyfat ~ Abdomen without influential point   (improved model1)
-BodyFat2=BodyFat[-which(abs(BodyFat$ABDOMEN)>120),]
+BodyFat2=BodyFat[-which(abs(BodyFat$ABDOMEN)>130),]
 ggplot(BodyFat2,aes(ABDOMEN,BODYFAT))+
         geom_point()+
         stat_smooth(method="lm",se=FALSE)+
@@ -83,13 +82,13 @@ summary(lmmodel2)
 #Model3:add another covariate to model2
 #using added variable plot
 fit=lm(AGE~ABDOMEN,data=BodyFat2)
-plot(fit$residuals,lmmodel2$residuals,pch=19)
+plot(fit$residuals,lmmodel2$residuals,pch=19,xlab="Residuals of Age ~ Abdomen",ylab="Residuals of BodyFat ~ Abdnmen",main ="Added variable plot of Age ")
 lmage = lm(lmmodel2$residuals ~ fit$residuals)
 summary(lmage)
 abline(lmage,col="blue",lwd=5)
 
 fit=lm(HEIGHT~ABDOMEN,data=BodyFat2)
-plot(fit$residuals,lmmodel2$residuals,pch=19)
+plot(fit$residuals,lmmodel2$residuals,pch=19,xlab="Residuals of Height ~ Abdomen",ylab="Residuals of BodyFat ~ Abdnmen",main ="Added variable plot of Height ")
 lmheight = lm(lmmodel2$residuals ~ fit$residuals)
 summary(lmheight)
 abline(lmheight,col="blue",lwd=5)
@@ -103,23 +102,9 @@ summary(lmmodel3_1)
 lmmodel3_2 = lm(BODYFAT ~ ABDOMEN + HEIGHT, data=BodyFat2)
 summary(lmmodel3_2)
 
-#Model3_3:add Age and Height variable
-lmmodel3_3 = lm(BODYFAT ~ ABDOMEN + HEIGHT + AGE, data=BodyFat2)
-summary(lmmodel3_3)
-
 
 ###Model comparison
-#K-fold CrossValidation
-set.seed(100)
-CV=trainControl(method = "cv",number = 5)    ##5-fold
-
-model1=train(BODYFAT ~ ABDOMEN, data=BodyFat, method="lm",trControl=CV)
-model2=train(BODYFAT ~ ABDOMEN, data=BodyFat2, method="lm",trControl=CV)
-model3_1=train(BODYFAT ~ ABDOMEN+AGE, data=BodyFat2, method="lm",trControl=CV)
-model3_2=train(BODYFAT ~ ABDOMEN+HEIGHT, data=BodyFat2, method="lm",trControl=CV)
-model3_3=train(BODYFAT ~ ABDOMEN+HEIGHT+AGE, data=BodyFat2, method="lm",trControl=CV)
-
-evaluate=rbind(model1$results,model2$results,model3_1$results,model3_2$results,model3_3$results)
+evaluate=rbind(summary(lmmodel1)$r.squared,summary(lmmodel2)$r.squared,summary(lmmodel3_1)$r.squared,summary(lmmodel3_2)$r.squared)
 evaluate
 
 #The best model is model3_2: BodyFat ~ Abdomen + height
@@ -127,7 +112,7 @@ final_model=lmmodel3_2
 
 ###Model diagnostics
 diagnostic = function(model){
-        par(mfrow = c(2, 2))
+        par(mfrow = c(1, 1))
         ##Standardized Residual Plot
         plot(predict(model),resid(model),pch=19,main="Standardized Residual Plot",xlab = "Prediction",ylab = "Residual")
         abline(a=0,b=0,col="black",lwd=3)
@@ -148,7 +133,6 @@ summary(final_model)
 
 ###Model weakness
 set_accurate=0.1
-Age=BodyFat2$AGE>0
 Age1=BodyFat2$AGE<40 & BodyFat2$AGE>20
 Age2=BodyFat2$AGE<60 & BodyFat2$AGE>40
 Age3=BodyFat2$AGE<80 & BodyFat2$AGE>60
@@ -159,3 +143,6 @@ precise=function(scope,accurate){
         print(precision)
 }
 precise(Age1,set_accurate)
+precise(Age2,set_accurate)
+precise(Age3,set_accurate)
+
