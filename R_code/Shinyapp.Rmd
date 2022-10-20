@@ -1,0 +1,97 @@
+---
+title: STAT628 Module2 Group4
+author: Xu, Qizhou, Yunqing
+output: html_document
+runtime: shiny
+abstract: 
+- This is a Shinyapp used to predict BodyFat (%) of males. 
+- After inputing your Abdomen (cm) and Height (cm), you could get your estimated BodyFat and its confidence interval. 
+- This app is robust. You could give null values, values out of range or impossible combination of values. The app would give well response corresponding to them. 
+- If you have any question, please contact Xu with email:xzou42@wisc.edu
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r  echo=FALSE}
+library(shiny)
+setwd("C:/Users/adin/Desktop/stat628/Module2/code/data")
+BodyFat = read.csv("BodyFat2.csv") 
+
+
+
+ui <- fluidPage(
+  titlePanel("BodyFat Prediction"),
+  numericInput("Abdomen", "Enter your Abdomen(cm) ranges from 70 to 120",NA,70,120),
+  numericInput("Height", "Enter your Height(cm) ranges from 150 to 210",NA,150,210),
+  textOutput("printed_result")
+  
+)
+
+server <- function(input, output) {
+  
+  output$printed_result <- renderText({
+    
+    if(is.na(input$Abdomen)&is.na(input$Height)){
+      paste0("Please give at least one appropriate input!")
+    }
+    else if(!(is.na(input$Abdomen))){
+      if(is.na(input$Height)){
+        if(input$Abdomen>=70&input$Abdomen<=120){
+          lmmodel=lm(BODYFAT ~ ABDOMEN, data=BodyFat)
+          pred= reactive({req(predict(lmmodel,data.frame(ABDOMEN=input$Abdomen),interval="predict"))})
+          paste0("Predicted only by Abdomen, your predicted body fat rate is ", round(pred()[1],2),"%",  " with 95% confidence interval [", round(pred()[2],2),"%, ",  round(pred()[3],2),"%].","   This may be not accurate and I recommend you to give Height input")
+        }
+        else{
+          paste0("The Abdomen is not in the scope")
+        }
+        
+      }
+      else if(input$Height>=150&input$Height<=210){
+        if(input$Abdomen>=70&input$Abdomen<=120){
+          lmmodel=lm(BODYFAT ~ ABDOMEN+HEIGHT, data=BodyFat)
+          pred= reactive({req(predict(lmmodel,data.frame(ABDOMEN=input$Abdomen,HEIGHT=input$Height),interval="predict"))})
+          if(pred()[1]>=6&pred()[1]<=35){
+            paste0("Your predicted body fat rate is ", round(pred()[1],2),"%"," with 95% confidence interval [", round(pred()[2],2),"%, ",  round(pred()[3],2),"%].")
+          }
+          else{
+            paste0("Your predicted body fat rate is ", round(pred()[1],2),"%.  This may be not accurate and you should check whether your individual data are right ")
+          }
+          
+        }
+        else{
+          paste0("The Abdomen is not in the scope")
+        }
+      }
+      else{
+        if(input$Abdomen>=70&input$Abdomen<=120){
+          paste0("The Height is not in the scope")
+        }
+        else{
+          paste0("The Abdomen and Height are not in the scope")
+        }
+      }
+      
+    }else{
+      if(input$Height>=150&input$Height<=210){
+        lmmodel=lm(BODYFAT ~ HEIGHT, data=BodyFat)
+        pred= reactive({req(predict(lmmodel,data.frame(HEIGHT=input$Height),interval="predict"))})
+          paste0("Predicted only by Height, your predicted body fat rate is ", round(pred()[1],2),"%"," with 95% confidence interval [", round(pred()[2],2),"%, ",  round(pred()[3],2),"%]."   ,"    This may be not accurate and I recommend you to give Abdomen input")
+      }
+      else{
+        paste0("The Height is not in the scope")
+      }
+    }
+    
+  })
+  
+}
+
+shinyApp(ui, server)
+
+
+```
+
+
+```
